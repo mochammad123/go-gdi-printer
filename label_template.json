@@ -1,0 +1,60 @@
+{
+  "name": "Label Kain 80x30",
+  "width_mm": 80,
+  "height_mm": 30,
+  "elements": [
+    {
+      "id": "el_1",
+      "type": "text",
+      "x": 3,
+      "y": 3,
+      "text": "Penerima",
+      "fontSize": 12,
+      "bold": true
+    },
+    {
+      "id": "el_2",
+      "type": "text",
+      "x": 40,
+      "y": 2.5,
+      "text": "Pemesan",
+      "fontSize": 12,
+      "bold": true
+    },
+    {
+      "id": "el_1790132404778",
+      "type": "text",
+      "x": 3,
+      "y": 9,
+      "text": "ANDY LUCKITO",
+      "fontSize": 12,
+      "bold": true
+    },
+    {
+      "id": "el_1790132424210",
+      "type": "text",
+      "x": 39.5,
+      "y": 9,
+      "text": "MAMANG RACING",
+      "fontSize": 12,
+      "bold": true
+    },
+    {
+      "id": "el_1790132437642",
+      "type": "line",
+      "x": 0,
+      "y": 15.5,
+      "width": 80,
+      "dashed": false
+    },
+    {
+      "id": "el_1790132454795",
+      "type": "text",
+      "x": 1,
+      "y": 18.5,
+      "text": "PANGGIL AKU KING PAMAN",
+      "fontSize": 12,
+      "bold": false
+    }
+  ]
+}
