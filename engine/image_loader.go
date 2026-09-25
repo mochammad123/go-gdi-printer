@@ -8,12 +8,49 @@ import (
 	_ "image/gif"
 	_ "image/jpeg"
 	_ "image/png"
+	"io/fs"
 	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
 	"time"
 )
+
+var embeddedAssetsFS fs.FS
+
+// RegisterEmbeddedAssets registers the embedded filesystem containing image assets
+func RegisterEmbeddedAssets(efs fs.FS) {
+	embeddedAssetsFS = efs
+}
+
+// EnsureAssetsFolder extracts default assets to disk if assets/ folder does not exist
+func EnsureAssetsFolder() {
+	if embeddedAssetsFS == nil {
+		return
+	}
+	exePath, err := os.Executable()
+	if err != nil {
+		return
+	}
+	targetDir := filepath.Join(filepath.Dir(exePath), "assets")
+	if fi, err := os.Stat(targetDir); err == nil && fi.IsDir() {
+		return
+	}
+	_ = os.MkdirAll(targetDir, 0755)
+
+	entries, err := fs.ReadDir(embeddedAssetsFS, "assets")
+	if err != nil {
+		return
+	}
+	for _, e := range entries {
+		if !e.IsDir() {
+			data, err := fs.ReadFile(embeddedAssetsFS, "assets/"+e.Name())
+			if err == nil {
+				_ = os.WriteFile(filepath.Join(targetDir, e.Name()), data, 0644)
+			}
+		}
+	}
+}
 
 // LoadImage loads an image from:
 // 1. Data URI base64 (e.g. "data:image/png;base64,iVBORw...")
@@ -98,6 +135,21 @@ func LoadImage(src string) (image.Image, error) {
 				return nil, fmt.Errorf("gagal membaca format gambar %s: %w", p, err)
 			}
 			return img, nil
+		}
+	}
+
+	// 5. Fallback ke embedded assets di dalam binary
+	if embeddedAssetsFS != nil {
+		cleanSrc := strings.TrimPrefix(filepath.ToSlash(src), "assets/")
+		tryPaths := []string{src, filepath.ToSlash(src), "assets/" + cleanSrc, cleanSrc}
+		for _, tp := range tryPaths {
+			data, err := fs.ReadFile(embeddedAssetsFS, tp)
+			if err == nil {
+				img, _, err := image.Decode(bytes.NewReader(data))
+				if err == nil {
+					return img, nil
+				}
+			}
 		}
 	}
 

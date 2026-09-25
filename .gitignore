@@ -8,6 +8,21 @@
 *.dylib
 print-service.exe
 
+# Build & Release Output Directories
+build/
+dist/
+bin/
+out/
+release/
+
+# Compressed Archives
+*.zip
+*.tar
+*.tar.gz
+*.tgz
+*.rar
+*.7z
+
 # Go Test Artifacts & Coverage
 *.test
 *.out
@@ -18,6 +33,16 @@ print-service.exe
 *.a
 
 # ==========================================
+# Logs & Temporary Files
+# ==========================================
+*.log
+err.log
+out.log
+*.tmp
+temp/
+tmp/
+
+# ==========================================
 # Environment & Secret Files
 # ==========================================
 .env
@@ -25,14 +50,6 @@ print-service.exe
 !.env.example
 *.pem
 *.key
-
-# ==========================================
-# Logs & Temporary Files
-# ==========================================
-*.log
-*.tmp
-temp/
-tmp/
 
 # ==========================================
 # IDE & Code Editors

@@ -1,0 +1,96 @@
+{
+  "name": "Label Kain 80x30",
+  "width_mm": 80,
+  "height_mm": 30,
+  "elements": [
+    {
+      "id": "el_1",
+      "type": "text",
+      "x": 2,
+      "y": 1.5,
+      "text": "Roll Induk",
+      "fontSize": 9,
+      "bold": true
+    },
+    {
+      "id": "el_2",
+      "type": "text",
+      "x": 40,
+      "y": 1.5,
+      "text": "Roll Pecahan",
+      "fontSize": 9,
+      "bold": true
+    },
+    {
+      "id": "el_3",
+      "type": "text",
+      "x": 2,
+      "y": 4.5,
+      "text": "{{RollInduk}}",
+      "fontSize": 10,
+      "bold": true
+    },
+    {
+      "id": "el_4",
+      "type": "text",
+      "x": 40,
+      "y": 4.5,
+      "text": "{{RollPecah}}",
+      "fontSize": 10,
+      "bold": true
+    },
+    {
+      "id": "el_5",
+      "type": "text",
+      "x": 2,
+      "y": 8.5,
+      "text": "{{JenisKain}}",
+      "fontSize": 10,
+      "bold": true
+    },
+    {
+      "id": "el_6",
+      "type": "text",
+      "x": 2,
+      "y": 12.5,
+      "text": "{{Warna}}",
+      "fontSize": 9,
+      "bold": true
+    },
+    {
+      "id": "el_7",
+      "type": "barcode",
+      "x": 2,
+      "y": 17,
+      "width": 34,
+      "height": 7.5,
+      "text": "{{NoRoll}}"
+    },
+    {
+      "id": "el_8",
+      "type": "text",
+      "x": 42,
+      "y": 19,
+      "text": "{{NoData}}",
+      "fontSize": 10,
+      "bold": true
+    },
+    {
+      "id": "el_9",
+      "type": "text",
+      "x": 62,
+      "y": 18.5,
+      "text": "{{NoRoll}}",
+      "fontSize": 12,
+      "bold": true
+    },
+    {
+      "id": "el_10",
+      "type": "line",
+      "x": 0,
+      "y": 26,
+      "width": 76,
+      "dashed": false
+    }
+  ]
+}

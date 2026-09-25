@@ -1,0 +1,96 @@
+{
+  "name": "Label Kain 80x30",
+  "width_mm": 80,
+  "height_mm": 30,
+  "elements": [
+    {
+      "id": "el_1",
+      "type": "text",
+      "x": 3,
+      "y": 3,
+      "text": "Roll Induk",
+      "fontSize": 10,
+      "bold": true
+    },
+    {
+      "id": "el_2",
+      "type": "text",
+      "x": 40,
+      "y": 2.5,
+      "text": "Roll Pecahan",
+      "fontSize": 10,
+      "bold": true
+    },
+    {
+      "id": "el_1790150134398",
+      "type": "barcode",
+      "x": 42,
+      "y": 12.5,
+      "width": 35,
+      "height": 8,
+      "text": "{{roll_pecahan}}"
+    },
+    {
+      "id": "el_1790150162886",
+      "type": "text",
+      "x": 3,
+      "y": 6.5,
+      "text": "{{roll_induk}}",
+      "fontSize": 10,
+      "bold": true
+    },
+    {
+      "id": "el_1790150200630",
+      "type": "text",
+      "x": 40,
+      "y": 6.5,
+      "text": "{{roll_pecahan}}",
+      "fontSize": 10,
+      "bold": true
+    },
+    {
+      "id": "el_1790150233022",
+      "type": "text",
+      "x": 3,
+      "y": 11,
+      "text": "{{nama_kain}}",
+      "fontSize": 10,
+      "bold": true
+    },
+    {
+      "id": "el_1790150256670",
+      "type": "text",
+      "x": 3,
+      "y": 14.5,
+      "text": "{{warna_kain}}",
+      "fontSize": 10,
+      "bold": true
+    },
+    {
+      "id": "el_1790150270814",
+      "type": "line",
+      "x": 0.5,
+      "y": 28,
+      "width": 79,
+      "dashed": false
+    },
+    {
+      "id": "el_1790150415718",
+      "type": "text",
+      "x": 1.5,
+      "y": 25,
+      "text": "{{kode_verifikasi}}",
+      "fontSize": 9,
+      "bold": true
+    },
+    {
+      "id": "el_1790150453061",
+      "type": "text",
+      "x": 62,
+      "y": 25,
+      "text": "{{kode_spk}}",
+      "fontSize": 9,
+      "bold": true
+    }
+  ]
+}

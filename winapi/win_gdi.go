@@ -15,6 +15,7 @@ var (
 	ModKernel32 = syscall.NewLazyDLL("kernel32.dll")
 
 	ProcGetDefaultPrinterW  = ModWinspool.NewProc("GetDefaultPrinterW")
+	ProcSetDefaultPrinterW  = ModWinspool.NewProc("SetDefaultPrinterW")
 	ProcEnumPrintersW       = ModWinspool.NewProc("EnumPrintersW")
 	ProcOpenPrinterW        = ModWinspool.NewProc("OpenPrinterW")
 	ProcClosePrinter        = ModWinspool.NewProc("ClosePrinter")
@@ -46,6 +47,11 @@ var (
 	ProcRectangle          = ModGdi32.NewProc("Rectangle")
 
 	ProcFillRect = ModUser32.NewProc("FillRect")
+
+	ProcCreateMutexW          = ModKernel32.NewProc("CreateMutexW")
+	ProcGetLastError          = ModKernel32.NewProc("GetLastError")
+	ProcCloseHandle           = ModKernel32.NewProc("CloseHandle")
+	ProcGetConsoleProcessList = ModKernel32.NewProc("GetConsoleProcessList")
 )
 
 const (
@@ -135,6 +141,19 @@ func GetDefaultPrinter() (string, error) {
 		return "", err
 	}
 	return syscall.UTF16ToString(buf), nil
+}
+
+// SetDefaultPrinter sets the Windows system-wide default printer
+func SetDefaultPrinter(printerName string) error {
+	pName, err := syscall.UTF16PtrFromString(printerName)
+	if err != nil {
+		return err
+	}
+	r1, _, err := ProcSetDefaultPrinterW.Call(uintptr(unsafe.Pointer(pName)))
+	if r1 == 0 {
+		return fmt.Errorf("gagal mengatur printer default: %v", err)
+	}
+	return nil
 }
 
 // ListInstalledPrinters returns a list of installed printers
@@ -492,3 +511,37 @@ func (p *GDIPrinter) DrawImage(img image.Image, xMm, yMm, wMm, hMm float64) erro
 	}
 	return nil
 }
+
+const ERROR_ALREADY_EXISTS = 183
+
+// AcquireSingleInstance attempts to acquire a named Windows mutex.
+// Returns (handle, isAlreadyRunning, error)
+func AcquireSingleInstance(name string) (uintptr, bool, error) {
+	utf16Name, err := syscall.UTF16PtrFromString(name)
+	if err != nil {
+		return 0, false, err
+	}
+	hMutex, _, callErr := ProcCreateMutexW.Call(0, 0, uintptr(unsafe.Pointer(utf16Name)))
+	if hMutex == 0 {
+		return 0, false, fmt.Errorf("gagal membuat mutex sistem: %v", callErr)
+	}
+	if errno, ok := callErr.(syscall.Errno); ok && errno == ERROR_ALREADY_EXISTS {
+		return hMutex, true, nil
+	}
+	return hMutex, false, nil
+}
+
+// ReleaseMutexHandle releases the named mutex
+func ReleaseMutexHandle(hMutex uintptr) {
+	if hMutex != 0 {
+		ProcCloseHandle.Call(hMutex)
+	}
+}
+
+// IsLaunchedFromExplorer checks if the console was created exclusively for this process (e.g. double click)
+func IsLaunchedFromExplorer() bool {
+	var pids [2]uint32
+	count, _, _ := ProcGetConsoleProcessList.Call(uintptr(unsafe.Pointer(&pids[0])), 2)
+	return count == 1
+}
+

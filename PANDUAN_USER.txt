@@ -1,0 +1,47 @@
+===================================================================
+             KNITTO PRINT SERVICE - PANDUAN PENGGUNA
+===================================================================
+
+Aplikasi ini adalah layanan pencetakan otomatis (Background Print Daemon)
+khusus printer thermal/label (Zebra, dsb) berbasis Windows Native GDI.
+
+-------------------------------------------------------------------
+CARA MENGGUNAKAN (UNTUK USER / OPERATOR):
+-------------------------------------------------------------------
+1. Cukup KLIK GANDA (Double Click) file:
+   print-service.exe
+
+2. APLIKASI OTOMATIS TERPASANG & AMAN:
+   • File master akan otomatis tersimpan aman di:
+     C:\Users\<User>\AppData\Local\Knitto\PrintService\
+   • Shortcut otomatis dibuat di DESKTOP dan STARTUP Windows.
+   • Aplikasi langsung menyala di System Tray (pojok kanan bawah taskbar).
+   • Aplikasi otomatis aktif setiap kali komputer dihidupkan/restart.
+   • File yang Anda download ini aman untuk dihapus setelah dijalankan sekali.
+
+-------------------------------------------------------------------
+CARA MENGATUR PRINTER & PORT:
+-------------------------------------------------------------------
+• Cara 1: Buka lewat icon di Desktop "Knitto Print Service"
+• Cara 2: Klik kanan icon Knitto di System Tray (pojok kanan bawah taskbar)
+• Cara 3: Buka browser ke alamat:
+  http://localhost:8080/dashboard
+
+Di Control Panel Anda bisa:
+- Memilih printer default Windows
+- Melakukan tes cetak label
+- Mengubah nomor port HTTP
+- Membuka folder template
+
+-------------------------------------------------------------------
+CARA MENAMBAH TEMPLATE BARU:
+-------------------------------------------------------------------
+• Cara 1 (Paling Mudah):
+  Klik tombol "➕ Tambah / Upload Template (.json)" di Control Panel
+  atau menu klik kanan Tray, lalu pilih file .json dari komputer.
+• Cara 2:
+  Klik tombol "Buka Folder Template" di Control Panel atau menu Tray,
+  lalu salin/paste file template (.json) ke dalam folder tersebut.
+
+Template baru langsung aktif dan siap digunakan tanpa perlu restart service!
+===================================================================

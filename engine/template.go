@@ -1,14 +1,111 @@
 package engine
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
+	"io/fs"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 
 	"print-service/winapi"
 )
+
+var (
+	embeddedTemplatesFS fs.FS
+	embeddedSubdir      string
+)
+
+// RegisterEmbeddedTemplates registers the embedded filesystem containing default templates
+func RegisterEmbeddedTemplates(efs fs.FS, subdir string) {
+	embeddedTemplatesFS = efs
+	embeddedSubdir = subdir
+}
+
+// GetTemplateDir returns the absolute path to the template/ folder adjacent to the executable.
+// If the KNITTO_TEMPLATE_DIR environment variable is set, it takes precedence.
+func GetTemplateDir() string {
+	if custom := os.Getenv("KNITTO_TEMPLATE_DIR"); custom != "" {
+		return custom
+	}
+	exePath, err := os.Executable()
+	if err == nil {
+		return filepath.Join(filepath.Dir(exePath), "template")
+	}
+	return "template"
+}
+
+// OpenTemplateFolder opens the template directory in Windows File Explorer
+func OpenTemplateFolder() error {
+	dir := GetTemplateDir()
+	_ = os.MkdirAll(dir, 0755)
+	return exec.Command("cmd", "/c", "start", "", dir).Start()
+}
+
+// AddTemplateFile copies an external JSON template file into the service template folder
+func AddTemplateFile(srcPath string) (string, error) {
+	srcPath = strings.Trim(strings.TrimSpace(srcPath), "\"")
+	if srcPath == "" {
+		return "", fmt.Errorf("path file template asal tidak boleh kosong")
+	}
+
+	srcData, err := os.ReadFile(srcPath)
+	if err != nil {
+		return "", fmt.Errorf("gagal membaca file '%s': %w", srcPath, err)
+	}
+	srcData = bytes.TrimPrefix(srcData, []byte("\xef\xbb\xbf"))
+
+	// Validasi bahwa file adalah JSON template yang valid
+	var testTpl DocumentTemplate
+	if err := json.Unmarshal(srcData, &testTpl); err != nil {
+		return "", fmt.Errorf("file '%s' bukan format JSON template yang valid: %w", srcPath, err)
+	}
+
+	targetDir := EnsureTemplateFolder()
+	fileName := filepath.Base(srcPath)
+	if !strings.HasSuffix(strings.ToLower(fileName), ".json") {
+		fileName += ".json"
+	}
+
+	destPath := filepath.Join(targetDir, fileName)
+	if err := os.WriteFile(destPath, srcData, 0644); err != nil {
+		return "", fmt.Errorf("gagal menyalin ke '%s': %w", destPath, err)
+	}
+
+	return destPath, nil
+}
+
+// EnsureTemplateFolder ensures a template/ folder exists next to the executable.
+// If missing or if embedded templates are available, extracts any missing templates to disk.
+func EnsureTemplateFolder() string {
+	targetDir := GetTemplateDir()
+	_ = os.MkdirAll(targetDir, 0755)
+
+	if embeddedTemplatesFS != nil {
+		entries, err := fs.ReadDir(embeddedTemplatesFS, embeddedSubdir)
+		if err == nil {
+			for _, e := range entries {
+				if !e.IsDir() && strings.HasSuffix(strings.ToLower(e.Name()), ".json") {
+					destPath := filepath.Join(targetDir, e.Name())
+					// Hanya ekstrak jika file belum ada di disk (menghargai modifikasi pengguna)
+					if _, err := os.Stat(destPath); os.IsNotExist(err) {
+						filePath := e.Name()
+						if embeddedSubdir != "" {
+							filePath = embeddedSubdir + "/" + e.Name()
+						}
+						data, err := fs.ReadFile(embeddedTemplatesFS, filePath)
+						if err == nil {
+							_ = os.WriteFile(destPath, data, 0644)
+						}
+					}
+				}
+			}
+		}
+	}
+	return targetDir
+}
 
 type TemplateElement struct {
 	ID       string  `json:"id"`
@@ -46,21 +143,23 @@ func ResolveTemplatePath(templateName string) (string, error) {
 		name += ".json"
 	}
 
+	tmplDir := GetTemplateDir()
 	exePath, _ := os.Executable()
 	exeDir := filepath.Dir(exePath)
 
-	// Search order:
-	// 1. template/<name>
-	// 2. <name>
-	// 3. <exeDir>/template/<name>
-	// 4. <exeDir>/<name>
+	// Urutan pencarian:
+	// 1. <tmplDir>/<name> (Folder template di sebelah exe / KNITTO_TEMPLATE_DIR)
+	// 2. template/<name>  (CWD)
+	// 3. <exeDir>/<name>
+	// 4. <name>
+	// 5. ../template/<name>
 	candidates := []string{
+		filepath.Join(tmplDir, name),
 		filepath.Join("template", name),
+		filepath.Join(exeDir, name),
 		name,
 		filepath.Join("..", "template", name),
 		filepath.Join("..", name),
-		filepath.Join(exeDir, "template", name),
-		filepath.Join(exeDir, name),
 	}
 
 	for _, p := range candidates {
@@ -69,36 +168,55 @@ func ResolveTemplatePath(templateName string) (string, error) {
 		}
 	}
 
-	return "", fmt.Errorf("file template '%s' tidak ditemukan! Pastikan file berada di folder 'template/' (contoh: template/%s)", name, name)
+	return "", fmt.Errorf("file template '%s' tidak ditemukan di disk", name)
 }
 
-// LoadTemplate reads the requested template JSON from template/ or executable directory
+// LoadTemplate reads the requested template JSON from disk or from embedded templates in the binary
 func LoadTemplate(templateName string) (*DocumentTemplate, error) {
-	targetPath, err := ResolveTemplatePath(templateName)
-	if err != nil {
-		return nil, err
+	name := strings.TrimSpace(templateName)
+	if name == "" {
+		return nil, fmt.Errorf("nama template wajib diisi")
+	}
+	if !strings.HasSuffix(strings.ToLower(name), ".json") {
+		name += ".json"
 	}
 
-	data, err := os.ReadFile(targetPath)
-	if err != nil {
-		return nil, fmt.Errorf("gagal membaca file template %s: %w", targetPath, err)
+	// 1. Prioritas 1: Baca dari disk jika ada (memungkinkan kustomisasi file oleh pengguna)
+	targetPath, err := ResolveTemplatePath(name)
+	if err == nil {
+		data, err := os.ReadFile(targetPath)
+		if err == nil {
+			data = bytes.TrimPrefix(data, []byte("\xef\xbb\xbf"))
+			var tpl DocumentTemplate
+			if err := json.Unmarshal(data, &tpl); err == nil && tpl.WidthMm > 0 && tpl.HeightMm > 0 {
+				return &tpl, nil
+			}
+		}
 	}
 
-	var tpl DocumentTemplate
-	if err := json.Unmarshal(data, &tpl); err != nil {
-		return nil, fmt.Errorf("gagal membaca format JSON file %s: %w", targetPath, err)
+	// 2. Prioritas 2 (Fallback): Baca dari embedded FS di dalam binary (selalu ada walau folder template tidak kebawa)
+	if embeddedTemplatesFS != nil {
+		embeddedPath := name
+		if embeddedSubdir != "" {
+			embeddedPath = embeddedSubdir + "/" + name
+		}
+		data, err := fs.ReadFile(embeddedTemplatesFS, embeddedPath)
+		if err == nil {
+			data = bytes.TrimPrefix(data, []byte("\xef\xbb\xbf"))
+			var tpl DocumentTemplate
+			if err := json.Unmarshal(data, &tpl); err == nil && tpl.WidthMm > 0 && tpl.HeightMm > 0 {
+				return &tpl, nil
+			}
+		}
 	}
 
-	if tpl.WidthMm <= 0 || tpl.HeightMm <= 0 {
-		return nil, fmt.Errorf("ukuran template tidak valid pada %s: lebar=%.1f mm, tinggi=%.1f mm", targetPath, tpl.WidthMm, tpl.HeightMm)
-	}
-
-	return &tpl, nil
+	return nil, fmt.Errorf("file template '%s' tidak ditemukan di folder template/ maupun di dalam binary", name)
 }
 
-// ListTemplates scans the template/ directory and returns all available .json templates
+// ListTemplates scans disk directories and embedded binary templates, returning deduplicated list
 func ListTemplates() ([]string, error) {
-	dirs := []string{"template", filepath.Join("..", "template")}
+	tmplDir := GetTemplateDir()
+	dirs := []string{tmplDir, "template", filepath.Join("..", "template")}
 	if exePath, err := os.Executable(); err == nil {
 		dirs = append(dirs, filepath.Join(filepath.Dir(exePath), "template"))
 	}
@@ -106,6 +224,7 @@ func ListTemplates() ([]string, error) {
 	seen := make(map[string]bool)
 	var list []string
 
+	// 1. Scan folder template di disk
 	for _, d := range dirs {
 		entries, err := os.ReadDir(d)
 		if err != nil {
@@ -116,6 +235,21 @@ func ListTemplates() ([]string, error) {
 				if !seen[e.Name()] {
 					seen[e.Name()] = true
 					list = append(list, e.Name())
+				}
+			}
+		}
+	}
+
+	// 2. Scan template embedded di binary
+	if embeddedTemplatesFS != nil {
+		entries, err := fs.ReadDir(embeddedTemplatesFS, embeddedSubdir)
+		if err == nil {
+			for _, e := range entries {
+				if !e.IsDir() && strings.HasSuffix(strings.ToLower(e.Name()), ".json") {
+					if !seen[e.Name()] {
+						seen[e.Name()] = true
+						list = append(list, e.Name())
+					}
 				}
 			}
 		}
