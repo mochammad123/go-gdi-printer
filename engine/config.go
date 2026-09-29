@@ -12,6 +12,7 @@ import (
 type AppConfig struct {
 	Port           int    `json:"port"`
 	DefaultPrinter string `json:"default_printer"`
+	TemplateDir    string `json:"template_dir,omitempty"`
 }
 
 var (
@@ -37,6 +38,7 @@ func LoadConfig(overridePort int) AppConfig {
 	currentCfg = AppConfig{
 		Port:           8080,
 		DefaultPrinter: "",
+		TemplateDir:    "",
 	}
 
 	data, err := os.ReadFile(configPath)
@@ -47,6 +49,7 @@ func LoadConfig(overridePort int) AppConfig {
 				currentCfg.Port = loaded.Port
 			}
 			currentCfg.DefaultPrinter = loaded.DefaultPrinter
+			currentCfg.TemplateDir = loaded.TemplateDir
 		}
 	} else {
 		// Save default config

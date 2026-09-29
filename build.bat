@@ -5,58 +5,77 @@ title Knitto Print Service - Build Generator
 echo ============================================================
 echo   KNITTO PRINT SERVICE - BUILD GENERATOR (GOLANG)
 echo ============================================================
+echo.
+echo PILIH TARGET SISTEM YANG INGIN DI-BUILD:
+echo.
+echo   [1] Standalone: System Tray + Control Panel (Default)
+echo       -^> Ada icon taskbar tray, form Control Panel Windows
+echo       -^> Otomatis auto-start saat boot, tanpa CMD hitam
+echo       -^> Siap dikemas ke Knitto-Print-Service-v1.0.zip
+echo.
+echo   [2] Standalone: Silent Daemon (100%% Senyap Tanpa Tray)
+echo       -^> Tanpa icon tray dan tanpa CMD hitam (seperti service murni)
+echo       -^> Otomatis auto-start saat boot, kelola via Web Dashboard
+echo       -^> Siap dikemas ke Knitto-Print-Service-v1.0.zip
+echo.
+echo   [3] Electron Sidecar (Untuk Aplikasi Pengebalan Desktop)
+echo       -^> Otomatis dikompilasi ^& disalin ke folder sidecar/ Electron
+echo       -^> Berjalan otomatis di balik layar saat Electron dibuka
+echo.
+echo   [4] Mode Custom / Lanjutan
+echo       -^> Pilih manual mode template (Bundle/Pisah) ^& runtime
+echo.
+set /p "CHOICE_SYSTEM=Pilihan Anda (1/2/3/4) [Default 1]: "
+if "!CHOICE_SYSTEM!"=="" set "CHOICE_SYSTEM=1"
 
-:: Cek flag otomatis dari command line
-set "CLI_BUNDLE="
-if /i "%~1"=="-bundle" set "CLI_BUNDLE=1"
-if /i "%~1"=="-nobundle" set "CLI_BUNDLE=2"
-if /i "%~1"=="-external" set "CLI_BUNDLE=2"
+set "CHOICE_BUNDLE=1"
+set "CHOICE_TRAY=1"
+set "CHOICE_SYNC=1"
 
-:: ------------------------------------------------------------
-:: 1. Pilihan Mode Template
-:: ------------------------------------------------------------
-if not "!CLI_BUNDLE!"=="" (
-    set "CHOICE_BUNDLE=!CLI_BUNDLE!"
-) else (
-    echo.
-    echo PILIHAN 1: MODE TEMPLATE
-    echo   [1] Full Bundle  : Semua template JSON di-embed ke dalam binary .exe
-    echo                      (Single file .exe mandiri, template bawaan tertanam)
-    echo   [2] Pisah / Eksternal : File .exe berdiri sendiri + folder template/ di sampingnya
-    echo                      (Mudah tambah/edit template JSON tanpa build ulang)
-    echo.
-    set /p "CHOICE_BUNDLE=Pilih mode template (1/2) [Default 1]: "
-    if "!CHOICE_BUNDLE!"=="" set "CHOICE_BUNDLE=1"
+if "!CHOICE_SYSTEM!"=="1" (
+    set "CHOICE_BUNDLE=1"
+    set "CHOICE_TRAY=1"
+    set "CHOICE_SYNC=1"
 )
+if "!CHOICE_SYSTEM!"=="2" (
+    set "CHOICE_BUNDLE=1"
+    set "CHOICE_TRAY=2"
+    set "CHOICE_SYNC=1"
+)
+if "!CHOICE_SYSTEM!"=="3" (
+    set "CHOICE_BUNDLE=1"
+    set "CHOICE_TRAY=2"
+    set "CHOICE_SYNC=1"
+)
+if "!CHOICE_SYSTEM!"=="4" (
+    echo.
+    echo PILIHAN TEMPLATE:
+    echo   [1] Full Bundle  : Semua template JSON di-embed ke dalam binary
+    echo   [2] Pisah        : File .exe berdiri sendiri + folder template/ di sampingnya
+    set /p "CHOICE_BUNDLE=Pilih (1/2) [Default 1]: "
+    if "!CHOICE_BUNDLE!"=="" set "CHOICE_BUNDLE=1"
 
-:: ------------------------------------------------------------
-:: 2. Pilihan Mode Tray
-:: ------------------------------------------------------------
-echo.
-echo PILIHAN 2: MODE TRAY RUNTIME
-echo   [1] System Tray Aktif : Ada icon taskbar tray + Control Panel Windows (Delphi-style)
-echo   [2] Headless / CLI    : Hanya terminal console tanpa GUI (-tray=false)
-echo.
-set /p "CHOICE_TRAY=Pilih mode tray (1/2) [Default 1]: "
-if "!CHOICE_TRAY!"=="" set "CHOICE_TRAY=1"
+    echo.
+    echo PILIHAN RUNTIME:
+    echo   [1] System Tray Aktif (Windows GUI)
+    echo   [2] Silent Daemon (Tanpa Tray, Tanpa CMD)
+    echo   [3] Console / CLI (Jendela Hitam CMD)
+    set /p "CHOICE_TRAY=Pilih (1/2/3) [Default 1]: "
+    if "!CHOICE_TRAY!"=="" set "CHOICE_TRAY=1"
 
-:: ------------------------------------------------------------
-:: 3. Pilihan Sinkronisasi ke Sidecar Electron
-:: ------------------------------------------------------------
-echo.
-echo PILIHAN 3: SINKRONISASI KE SIDECAR ELECTRON
-echo   [1] Ya : Salin ke ..\Pengebalan\knitto-manpro-electron\sidecar\
-echo   [2] Tidak : Hanya simpan di folder ini (golang\)
-echo.
-set /p "CHOICE_SYNC=Salin ke sidecar Electron? (1/2) [Default 1]: "
-if "!CHOICE_SYNC!"=="" set "CHOICE_SYNC=1"
+    echo.
+    echo SINKRONISASI KE SIDECAR ELECTRON:
+    echo   [1] Ya
+    echo   [2] Tidak
+    set /p "CHOICE_SYNC=Pilih (1/2) [Default 1]: "
+    if "!CHOICE_SYNC!"=="" set "CHOICE_SYNC=1"
+)
 
 echo.
 echo ============================================================
 echo  MEMULAI PROSES BUILD...
 echo ============================================================
 
-:: Set build tags berdasarkan pilihan
 set "BUILD_TAGS="
 set "MODE_LABEL=Full Bundle (Embedded Templates)"
 
@@ -65,10 +84,16 @@ if "!CHOICE_BUNDLE!"=="2" (
     set "MODE_LABEL=Pisah / External Templates (No-Bundle)"
 )
 
-:: Set LDFLAGS (-H=windowsgui untuk pure background daemon tanpa CMD hitam ala Delphi)
-set "LDFLAGS=-s -w -H=windowsgui"
+set "LDFLAGS=-s -w -H=windowsgui -X main.DefaultTray=true"
+set "TRAY_LABEL=System Tray Aktif"
+
 if "!CHOICE_TRAY!"=="2" (
-    set "LDFLAGS=-s -w"
+    set "LDFLAGS=-s -w -H=windowsgui -X main.DefaultTray=false"
+    set "TRAY_LABEL=Silent Daemon (100%% Senyap, Tanpa Tray, Tanpa CMD)"
+)
+if "!CHOICE_TRAY!"=="3" (
+    set "LDFLAGS=-s -w -X main.DefaultTray=false"
+    set "TRAY_LABEL=Console / CLI (Jendela Hitam CMD)"
 )
 
 echo [1/3] Menjalankan: go build !BUILD_TAGS! -ldflags="!LDFLAGS!" -o print-service.exe .
@@ -83,15 +108,12 @@ if %ERRORLEVEL% NEQ 0 (
 
 echo ✅ Build berhasil! Binary dibuat: print-service.exe
 
-:: Pastikan folder template lokal ada
 if not exist "template" (
     mkdir "template"
 )
 
-:: Jika pilihan Pisah/Eksternal, pastikan template JSON ada di folder template lokal
 echo [2/3] Memeriksa folder template...
 if "!CHOICE_BUNDLE!"=="2" (
-    echo      Mode Pisah: Memastikan semua template JSON siap di folder template\
     xcopy /Y /Q "template\*.json" "template\" >nul 2>&1
 )
 
@@ -109,7 +131,6 @@ if "!CHOICE_SYNC!"=="1" (
     copy /Y "print-service.exe" "!SIDECAR_DIR!\print-service.exe" >nul
     copy /Y "config.json" "!SIDECAR_DIR!\config.json" >nul 2>&1
     
-    :: Selalu salin folder template ke sidecar jika ada
     if not exist "!SIDECAR_DIR!\template" (
         mkdir "!SIDECAR_DIR!\template"
     )
@@ -140,23 +161,25 @@ if not exist "build\template" (
 )
 xcopy /Y /Q /E "template\*.json" "build\template\" >nul 2>&1
 
+:: Buat file ZIP otomatis
+powershell -Command "Start-Sleep -Milliseconds 500; Compress-Archive -Path 'build\print-service.exe', 'build\config.json', 'build\PANDUAN_USER.txt', 'build\template' -DestinationPath 'build\Knitto-Print-Service-v1.0.zip' -Force" >nul 2>&1
+
+:: Hapus binary sementara di root agar workspace bersih
+del /f /q "print-service.exe" >nul 2>&1
+
 echo ✅ Paket rilis berhasil disiapkan di folder 'build\':
 echo    - build\print-service.exe
 echo    - build\config.json
 echo    - build\PANDUAN_USER.txt
 echo    - build\template\ (*.json)
+echo    - build\Knitto-Print-Service-v1.0.zip (Siap kirim WA/Drive)
 
 echo.
 echo ============================================================
 echo 🎉 PROSES BUILD SELESAI DENGAN SUKSES!
 echo    Mode Template : !MODE_LABEL!
-if "!CHOICE_TRAY!"=="2" (
-echo    Mode Tray     : Headless (-tray=false saat dijalankan)
-) else (
-echo    Mode Tray     : System Tray Aktif (Default)
-)
+echo    Mode Runtime  : !TRAY_LABEL!
 echo    Folder Rilis  : build\ (Tinggal kirim folder ini atau .zip ke user)
 echo ============================================================
 echo.
 pause
-

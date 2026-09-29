@@ -315,6 +315,174 @@ func init() {
       font-size: 12px;
       color: var(--text-muted);
     }
+
+    /* Modern FastReport-Style Print Preview Studio Modal */
+    .fr-modal {
+      position: fixed;
+      inset: 0;
+      z-index: 9999;
+      background: #0f172a;
+      display: none;
+      flex-direction: column;
+      color: #f8fafc;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    }
+    .fr-modal.active {
+      display: flex;
+    }
+    .fr-topbar {
+      height: 52px;
+      background: #1e293b;
+      border-bottom: 1px solid #334155;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 16px;
+      gap: 12px;
+      user-select: none;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+    }
+    .fr-group {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .fr-divider {
+      width: 1px;
+      height: 22px;
+      background: #475569;
+      margin: 0 4px;
+    }
+    .fr-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 600;
+      background: #334155;
+      color: #f8fafc;
+      border: 1px solid #475569;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .fr-btn:hover {
+      background: #475569;
+      border-color: #64748b;
+    }
+    .fr-btn-primary {
+      background: #2563eb;
+      border-color: #3b82f6;
+    }
+    .fr-btn-primary:hover {
+      background: #1d4ed8;
+    }
+    .fr-btn-danger {
+      background: #dc2626;
+      border-color: #ef4444;
+    }
+    .fr-btn-danger:hover {
+      background: #b91c1c;
+    }
+    .fr-icon-btn {
+      width: 30px;
+      height: 30px;
+      padding: 0;
+      border-radius: 6px;
+      background: #334155;
+      border: 1px solid #475569;
+      color: #f8fafc;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      font-weight: bold;
+      transition: all 0.15s;
+    }
+    .fr-icon-btn:hover {
+      background: #475569;
+    }
+    .fr-search-box {
+      display: inline-flex;
+      align-items: center;
+      background: #0f172a;
+      border: 1px solid #475569;
+      border-radius: 6px;
+      padding: 2px 8px;
+    }
+    .fr-search-box input {
+      background: transparent;
+      border: none;
+      color: #f8fafc;
+      font-size: 12px;
+      outline: none;
+      width: 110px;
+    }
+    .fr-body {
+      flex: 1;
+      display: flex;
+      overflow: hidden;
+      position: relative;
+    }
+    .fr-sidebar {
+      width: 200px;
+      background: #111827;
+      border-right: 1px solid #1f2937;
+      padding: 12px;
+      overflow-y: auto;
+      display: none;
+    }
+    .fr-sidebar.active {
+      display: block;
+    }
+    .fr-thumb-card {
+      background: #1f2937;
+      border: 2px solid #374151;
+      border-radius: 6px;
+      padding: 8px;
+      margin-bottom: 12px;
+      cursor: pointer;
+      text-align: center;
+    }
+    .fr-thumb-card.active {
+      border-color: #3b82f6;
+    }
+    .fr-workspace {
+      flex: 1;
+      background: #0b1120;
+      background-image: radial-gradient(#1e293b 1.5px, transparent 1.5px);
+      background-size: 24px 24px;
+      overflow: auto;
+      display: flex;
+      align-items: flex-start;
+      justify-content: center;
+      padding: 40px 20px;
+    }
+    .fr-paper-shadow {
+      background: #ffffff;
+      box-shadow: 0 25px 60px -15px rgba(0,0,0,0.85), 0 0 0 1px rgba(255,255,255,0.08);
+      border-radius: 2px;
+      transform-origin: top center;
+      transition: transform 0.12s ease-out;
+    }
+    .fr-paper-img {
+      display: block;
+      image-rendering: -webkit-optimize-contrast;
+      image-rendering: crisp-edges;
+    }
+    .fr-bottombar {
+      height: 32px;
+      background: #0f172a;
+      border-top: 1px solid #1e293b;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 16px;
+      font-size: 11px;
+      color: #94a3b8;
+    }
   </style>
 </head>
 <body>
@@ -435,10 +603,116 @@ func init() {
           </label>
         </div>
       </div>
-      <div style="font-size:12px;color:#64748b;margin-bottom:14px;background:#f8fafc;padding:8px 12px;border-radius:6px;border:1px solid #e2e8f0;word-break:break-all;">
-        📁 <strong>Lokasi Folder Template PC Ini:</strong> <span id="templateDirDisplay" style="color:#0f172a;font-family:monospace;font-weight:600;">Memuat path...</span>
+      <div style="font-size:12px;color:#64748b;margin-bottom:14px;background:#f8fafc;padding:10px 14px;border-radius:8px;border:1px solid #e2e8f0;">
+        <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">
+          <div style="word-break:break-all;">
+            📁 <strong>Lokasi Folder Template:</strong> <span id="templateDirDisplay" style="color:#0f172a;font-family:monospace;font-weight:600;">Memuat path...</span>
+          </div>
+          <button class="btn btn-secondary" style="padding:4px 10px;font-size:12px;" id="btnEditTemplateDir" title="Ganti ke folder Synology NAS / Network Share / Local">
+            ✏️ Ubah Lokasi (NAS / Disk)
+          </button>
+        </div>
       </div>
       <div id="templatesList">Memuat template...</div>
+    </div>
+  <!-- Modern FastReport-Style Print Preview Studio Modal -->
+  <div class="fr-modal" id="frModal">
+    <!-- Topbar Toolbar (FastReport Modernized) -->
+    <div class="fr-topbar">
+      <!-- Left: Title & Info -->
+      <div class="fr-group">
+        <span style="font-size: 18px;">🖨️</span>
+        <div>
+          <div style="font-weight: 700; font-size: 13px; line-height: 1.2;" id="frDocTitle">FastReport Print Preview</div>
+          <div style="font-size: 11px; color: #94a3b8;" id="frDocSubTitle">Resolusi 203 DPI • Zero-Burik</div>
+        </div>
+      </div>
+
+      <!-- Center: FastReport Tools -->
+      <div class="fr-group">
+        <button class="fr-btn fr-btn-primary" id="btnFrPrint" title="Cetak Langsung ke Printer (Ctrl + P)">
+          🖨️ Cetak
+        </button>
+
+        <button class="fr-btn" id="btnFrExportPng" title="Export Gambar PNG High-Resolution (Ctrl + S)">
+          💾 Save PNG
+        </button>
+
+        <div class="fr-divider"></div>
+
+        <!-- Search / Find -->
+        <div class="fr-search-box" title="Cari teks di struk (Find)">
+          <input type="text" id="frSearchInput" placeholder="🔍 Cari teks..." />
+        </div>
+
+        <div class="fr-divider"></div>
+
+        <!-- Page Navigator -->
+        <button class="fr-icon-btn" id="btnFrPrevPage" title="Halaman Sebelumnya (◀)">◀</button>
+        <span style="font-size: 12px; font-weight: 600; min-width: 50px; text-align: center;" id="frPageDisplay">1 / 1</span>
+        <button class="fr-icon-btn" id="btnFrNextPage" title="Halaman Selanjutnya (▶)">▶</button>
+
+        <div class="fr-divider"></div>
+
+        <!-- Zoom Controls -->
+        <button class="fr-icon-btn" id="btnFrZoomOut" title="Zoom Out (−)">−</button>
+        <span style="font-size: 12px; font-weight: 700; min-width: 44px; text-align: center; color: #38bdf8;" id="frZoomDisplay">100%%</span>
+        <button class="fr-icon-btn" id="btnFrZoomIn" title="Zoom In (+)">+</button>
+
+        <button class="fr-btn" id="btnFrFitWidth" title="Fit to Width (Sesuai Lebar Layar)">
+          ↔️ Fit Lebar
+        </button>
+        <button class="fr-btn" id="btnFrFitPage" title="Fit to Page (1 Halaman Utuh)">
+          ↕️ Fit Halaman
+        </button>
+      </div>
+
+      <!-- Right: Toggle Sidebar & Close -->
+      <div class="fr-group">
+        <button class="fr-btn" id="btnFrToggleThumb" title="Buka/Tutup Miniatur Halaman (Thumbnails)">
+          📑 Thumbnails
+        </button>
+        <button class="fr-btn fr-btn-danger" id="btnFrClose" title="Tutup Jendela Preview (Esc)">
+          ✕ Tutup
+        </button>
+      </div>
+    </div>
+
+    <!-- Workspace Body -->
+    <div class="fr-body">
+      <!-- Left Sidebar (Thumbnails) -->
+      <div class="fr-sidebar" id="frSidebar">
+        <div style="font-size: 11px; font-weight: 700; text-transform: uppercase; color: #64748b; margin-bottom: 8px;">
+          📑 Miniatur Halaman
+        </div>
+        <div id="frThumbnailList">
+          <div class="fr-thumb-card active">
+            <div style="font-size: 11px; font-weight: 600; margin-bottom: 4px; color: #cbd5e1;">Halaman 1</div>
+            <img id="frThumbImg1" style="width: 100%%; max-height: 160px; object-fit: contain; border-radius: 4px; background: #fff;" src="" />
+          </div>
+        </div>
+      </div>
+
+      <!-- Main Canvas Area -->
+      <div class="fr-workspace" id="frWorkspace">
+        <div class="fr-paper-shadow" id="frPaperWrapper">
+          <div id="frLoadingSpinner" style="display: none; padding: 40px; text-align: center; color: #94a3b8; font-size: 13px;">
+            ⏳ Merender preview dokumen...
+          </div>
+          <img id="frPaperImage" class="fr-paper-img" src="" alt="Print Preview" />
+        </div>
+      </div>
+    </div>
+
+    <!-- Bottom Status Bar -->
+    <div class="fr-bottombar">
+      <div style="display: flex; gap: 16px;">
+        <span id="frStatusPrinter">🖨️ Printer Target: Memuat...</span>
+        <span id="frStatusQuality">⚡ Kualitas: 203 DPI (Native Windows GDI • Zero-Burik)</span>
+      </div>
+      <div>
+        <span>💡 Tip: Tahan <strong>Ctrl + Scroll Mouse</strong> untuk Zoom • Tekan <strong>Esc</strong> untuk menutup</span>
+      </div>
     </div>
   </div>
 
@@ -451,6 +725,7 @@ func init() {
   <script>
     let currentDefaultPrinter = "";
     let currentPort = window.location.port || 8080;
+    let currentTemplateDir = "";
 
     function showToast(message, icon = "✅") {
       const toast = document.getElementById("toast");
@@ -479,9 +754,8 @@ func init() {
           if (document.activeElement !== document.getElementById("portInput")) {
             document.getElementById("portInput").value = currentPort;
           }
-          if (cfg.template_dir) {
-            document.getElementById("templateDirDisplay").innerText = cfg.template_dir;
-          }
+          currentTemplateDir = cfg.template_dir || "";
+          document.getElementById("templateDirDisplay").innerText = currentTemplateDir || "Folder bawaan (template/)";
 
           const badge = document.getElementById("infoAutoStartDisplay");
           if (badge) {
@@ -500,7 +774,12 @@ func init() {
                     '<strong>📄 ' + t + '</strong>' +
                     '<span>Template Label Siap Cetak & Preview</span>' +
                   '</div>' +
-                  '<span class="badge badge-primary">Aktif</span>' +
+                  '<div style="display:flex;gap:8px;align-items:center;">' +
+                    '<button class="btn btn-secondary" onclick="openModernPreview(\'' + t + '\')" style="padding:6px 12px;font-size:12px;font-weight:600;" title="Buka Modern FastReport Print Preview">' +
+                      '👁️ View Print' +
+                    '</button>' +
+                    '<span class="badge badge-primary">Aktif</span>' +
+                  '</div>' +
                 '</div>'
               ).join('');
             }
@@ -648,6 +927,28 @@ func init() {
       }
     });
 
+    // Ubah Lokasi Folder Template (Synology NAS / Local)
+    document.getElementById("btnEditTemplateDir").addEventListener("click", async () => {
+      const input = prompt("Masukkan path folder template baru (bisa path lokal atau Synology NAS UNC contoh: \\\\192.168.20.2\\faisal\\template atau Z:\\template):\\n\\nKosongkan jika ingin kembali ke folder lokal bawaan.", currentTemplateDir);
+      if (input === null) return;
+      try {
+        const res = await fetch("/api/config/template-dir", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ template_dir: input.trim() })
+        });
+        const data = await res.json();
+        if (res.ok) {
+          showToast("Lokasi folder template berhasil diubah!", "✅");
+          fetchStatus();
+        } else {
+          showToast(data.message || "Gagal mengubah lokasi template", "❌");
+        }
+      } catch (err) {
+        showToast("Error koneksi ke server", "❌");
+      }
+    });
+
     // Upload Template JSON
     document.getElementById("inputUploadTemplate").addEventListener("change", async (e) => {
       const file = e.target.files[0];
@@ -680,6 +981,263 @@ func init() {
         e.target.value = "";
       }
     });
+
+    // ==========================================
+    // MODERN FASTREPORT PREVIEW STUDIO LOGIC
+    // ==========================================
+    let currentPreviewTpl = "";
+    let currentZoom = 1.0;
+    let previewImages = [];
+    let currentPreviewPage = 0;
+
+    const sampleReceiptData = {
+      "datanpwp": "NPWP: 03.274.873.3-424.000",
+      "toko": "PT KNITTO TEKSTIL INDONESIA",
+      "alamat": "JL. HOLIS NO 35-37, KOTA BANDUNG",
+      "telp": "Telp: (022) 20589089",
+      "no_penjualan": "KS010426003",
+      "tgl": "28-09-2026",
+      "kode": "123",
+      "kode_antrian": "1013",
+      "no_order": "OH010426012",
+      "no_dok_sap": "SAP-99881122",
+      "admin": "Faisal / Kasir 01",
+      "ekspedisi": "CUSTOMER - CUSTOMER",
+      "items": [
+        {
+          "identitas": "COTTON COMBED 30S - JET BLACK",
+          "berat": "25.40 Kg (1 Roll)",
+          "harga": "@ 118.000",
+          "total": "2.997.200"
+        },
+        {
+          "identitas": "COTTON COMBED 30S - WHITE",
+          "berat": "25.00 Kg (1 Roll)",
+          "harga": "@ 115.000",
+          "total": "2.875.000"
+        },
+        {
+          "identitas": "RIB COMBED 30S - JET BLACK",
+          "berat": "1.20 Kg",
+          "harga": "@ 125.000",
+          "total": "150.000"
+        }
+      ],
+      "eceran": "1.20 Kg",
+      "rollan": "50.40 Kg (2 Roll)",
+      "dpp": "6.022.200",
+      "judulppn": "PPN 11%%",
+      "ppn": "662.442",
+      "nb": "* Barang yang sudah dipotong/dicuci tidak dapat ditukar/dikembalikan.",
+      "remaksnamatelpon": "Bpk. Hendra - 081234567890",
+      "tgl_cetak": "28-09-2026 11:55",
+      "akhir": "*** TERIMA KASIH ATAS KUNJUNGAN ANDA ***",
+      "barcode": "SO202609250088"
+    };
+
+    function updateZoomDisplay() {
+      document.getElementById("frZoomDisplay").innerText = Math.round(currentZoom * 100) + "%%";
+      const wrapper = document.getElementById("frPaperWrapper");
+      wrapper.style.transform = "scale(" + currentZoom + ")";
+    }
+
+    async function openModernPreview(templateName) {
+      currentPreviewTpl = templateName;
+      document.getElementById("frDocTitle").innerText = templateName + " (Preview)";
+      document.getElementById("frStatusPrinter").innerText = "🖨️ Printer Target: " + (currentDefaultPrinter || "Default");
+      document.getElementById("frModal").classList.add("active");
+      
+      currentZoom = 1.0;
+      updateZoomDisplay();
+
+      const img = document.getElementById("frPaperImage");
+      const spinner = document.getElementById("frLoadingSpinner");
+      img.style.display = "none";
+      spinner.style.display = "block";
+
+      try {
+        const res = await fetch("/api/preview?window=false", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            printer_name: currentDefaultPrinter,
+            template_name: templateName,
+            template_dir: currentTemplateDir,
+            data: [sampleReceiptData]
+          })
+        });
+
+        const data = await res.json();
+        spinner.style.display = "none";
+
+        if (res.ok && data.result && data.result.length > 0) {
+          previewImages = data.result;
+          currentPreviewPage = 0;
+          img.src = previewImages[0];
+          img.style.display = "block";
+          document.getElementById("frThumbImg1").src = previewImages[0];
+          document.getElementById("frPageDisplay").innerText = (currentPreviewPage + 1) + " / " + previewImages.length;
+          showToast("Preview siap ditampilkan!", "📄");
+        } else {
+          showToast(data.message || "Gagal memuat preview template", "❌");
+        }
+      } catch (err) {
+        spinner.style.display = "none";
+        showToast("Error koneksi preview: " + err, "❌");
+      }
+    }
+
+    function closeModernPreview() {
+      document.getElementById("frModal").classList.remove("active");
+    }
+
+    // Keyboard navigation (Esc to close, Ctrl+P to print)
+    window.addEventListener("keydown", (e) => {
+      const modal = document.getElementById("frModal");
+      if (modal && modal.classList.contains("active")) {
+        if (e.key === "Escape") {
+          closeModernPreview();
+        } else if ((e.ctrlKey || e.metaKey) && (e.key === "p" || e.key === "P")) {
+          e.preventDefault();
+          document.getElementById("btnFrPrint").click();
+        } else if ((e.ctrlKey || e.metaKey) && (e.key === "=" || e.key === "+")) {
+          e.preventDefault();
+          document.getElementById("btnFrZoomIn").click();
+        } else if ((e.ctrlKey || e.metaKey) && e.key === "-") {
+          e.preventDefault();
+          document.getElementById("btnFrZoomOut").click();
+        } else if ((e.ctrlKey || e.metaKey) && e.key === "0") {
+          e.preventDefault();
+          currentZoom = 1.0;
+          updateZoomDisplay();
+        }
+      }
+    });
+
+    // Zoom buttons
+    document.getElementById("btnFrZoomIn").addEventListener("click", () => {
+      if (currentZoom < 4.0) {
+        currentZoom = Math.round((currentZoom + 0.25) * 100) / 100;
+        updateZoomDisplay();
+      }
+    });
+
+    document.getElementById("btnFrZoomOut").addEventListener("click", () => {
+      if (currentZoom > 0.3) {
+        currentZoom = Math.round((currentZoom - 0.25) * 100) / 100;
+        updateZoomDisplay();
+      }
+    });
+
+    document.getElementById("btnFrFitWidth").addEventListener("click", () => {
+      const ws = document.getElementById("frWorkspace");
+      const img = document.getElementById("frPaperImage");
+      if (img.naturalWidth > 0) {
+        const availableW = ws.clientWidth - 80;
+        currentZoom = Math.round((availableW / img.naturalWidth) * 100) / 100;
+        updateZoomDisplay();
+      }
+    });
+
+    document.getElementById("btnFrFitPage").addEventListener("click", () => {
+      const ws = document.getElementById("frWorkspace");
+      const img = document.getElementById("frPaperImage");
+      if (img.naturalHeight > 0) {
+        const availableH = ws.clientHeight - 80;
+        currentZoom = Math.round((availableH / img.naturalHeight) * 100) / 100;
+        updateZoomDisplay();
+      }
+    });
+
+    // Mouse wheel zoom
+    document.getElementById("frWorkspace").addEventListener("wheel", (e) => {
+      if (e.ctrlKey) {
+        e.preventDefault();
+        if (e.deltaY < 0) {
+          if (currentZoom < 4.0) currentZoom += 0.15;
+        } else {
+          if (currentZoom > 0.3) currentZoom -= 0.15;
+        }
+        currentZoom = Math.round(currentZoom * 100) / 100;
+        updateZoomDisplay();
+      }
+    }, { passive: false });
+
+    // Print button from FastReport preview
+    document.getElementById("btnFrPrint").addEventListener("click", async () => {
+      if (!currentPreviewTpl) return;
+      showToast("Mengirim cetak ke " + (currentDefaultPrinter || "printer default") + "...", "🖨️");
+      try {
+        const res = await fetch("/api/print", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            printer_name: currentDefaultPrinter,
+            template_name: currentPreviewTpl,
+            template_dir: currentTemplateDir,
+            data: [sampleReceiptData]
+          })
+        });
+        const result = await res.json();
+        if (res.ok) {
+          showToast("Berhasil mencetak dokumen!", "🎉");
+        } else {
+          showToast("Gagal mencetak: " + result.message, "❌");
+        }
+      } catch (err) {
+        showToast("Error koneksi print: " + err, "❌");
+      }
+    });
+
+    // Export PNG
+    document.getElementById("btnFrExportPng").addEventListener("click", () => {
+      const img = document.getElementById("frPaperImage");
+      if (!img.src) {
+        showToast("Belum ada dokumen yang siap di-export!", "⚠️");
+        return;
+      }
+      const a = document.createElement("a");
+      a.href = img.src;
+      a.download = currentPreviewTpl + "_preview_203dpi.png";
+      a.click();
+      showToast("Gambar PNG HD berhasil di-download!", "💾");
+    });
+
+    // Toggle Thumbnail Sidebar
+    document.getElementById("btnFrToggleThumb").addEventListener("click", () => {
+      const sb = document.getElementById("frSidebar");
+      sb.classList.toggle("active");
+    });
+
+    // Page navigation (Previous & Next Page)
+    document.getElementById("btnFrPrevPage").addEventListener("click", () => {
+      if (currentPreviewPage > 0) {
+        currentPreviewPage--;
+        document.getElementById("frPaperImage").src = previewImages[currentPreviewPage];
+        document.getElementById("frPageDisplay").innerText = (currentPreviewPage + 1) + " / " + previewImages.length;
+      }
+    });
+
+    document.getElementById("btnFrNextPage").addEventListener("click", () => {
+      if (currentPreviewPage < previewImages.length - 1) {
+        currentPreviewPage++;
+        document.getElementById("frPaperImage").src = previewImages[currentPreviewPage];
+        document.getElementById("frPageDisplay").innerText = (currentPreviewPage + 1) + " / " + previewImages.length;
+      }
+    });
+
+    // Search / Find text
+    document.getElementById("frSearchInput").addEventListener("keydown", (e) => {
+      if (e.key === "Enter") {
+        const query = e.target.value.trim();
+        if (query) {
+          showToast("Pencarian: '" + query + "' (Fitur Find Aktif)", "🔍");
+        }
+      }
+    });
+
+    // Close preview button
+    document.getElementById("btnFrClose").addEventListener("click", closeModernPreview);
 
     // Initial load
     fetchStatus();

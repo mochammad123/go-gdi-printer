@@ -19,14 +19,26 @@ type RenderedBitmap struct {
 	Pixels   []byte // Top-down 32-bit BGRA pixel data
 }
 
-// RenderPreviewBitmap renders a single document into a RenderedBitmap using Windows GDI Memory DC
+// RenderPreviewBitmap renders a single document into raw BGRA pixel buffer using Windows GDI Memory DC
 func RenderPreviewBitmap(tpl *DocumentTemplate, doc DocumentData, dpi int32) (*RenderedBitmap, error) {
 	if dpi <= 0 {
 		dpi = 203 // Default 203 DPI (8 dots/mm)
 	}
 
+	heightMm := tpl.HeightMm
+	hasLoopBand := false
+	for _, el := range tpl.Elements {
+		if el.Type == "band" || el.Type == "table" {
+			hasLoopBand = true
+			break
+		}
+	}
+	if dynH := CalculateDocumentHeightMm(tpl, doc); dynH > 0 && (hasLoopBand || tpl.AutoHeight || dynH > heightMm) {
+		heightMm = dynH
+	}
+
 	wPx := int32(tpl.WidthMm * float64(dpi) / 25.4)
-	hPx := int32(tpl.HeightMm * float64(dpi) / 25.4)
+	hPx := int32(heightMm * float64(dpi) / 25.4)
 	if wPx <= 0 || hPx <= 0 {
 		return nil, fmt.Errorf("ukuran template tidak valid untuk preview: %dx%d px", wPx, hPx)
 	}
@@ -152,11 +164,16 @@ func GetTemplateDPI(targetPrinter string) (int32, string) {
 
 // GeneratePreviews renders multiple documents using the specified template and returns an array of Base64 PNGs
 func GeneratePreviews(templateName string, documents []DocumentData, targetPrinter string) ([]string, error) {
+	return GeneratePreviewsWithDir(templateName, "", documents, targetPrinter)
+}
+
+// GeneratePreviewsWithDir renders multiple documents using the specified template and custom directory (e.g. Synology NAS)
+func GeneratePreviewsWithDir(templateName, templateDir string, documents []DocumentData, targetPrinter string) ([]string, error) {
 	if len(documents) == 0 {
 		documents = []DocumentData{{}}
 	}
 
-	tpl, err := LoadTemplate(templateName)
+	tpl, err := LoadTemplateWithDir(templateName, templateDir)
 	if err != nil {
 		return nil, fmt.Errorf("gagal memuat template: %w", err)
 	}

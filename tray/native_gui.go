@@ -116,6 +116,7 @@ const (
 	ID_GUI_EDIT_PORT          = 4007
 	ID_GUI_BTN_OPEN_TEMPLATES = 4008
 	ID_GUI_BTN_ADD_TEMPLATE   = 4010
+	ID_GUI_BTN_PREVIEW        = 4011
 )
 
 type GuiCallbacks struct {
@@ -126,6 +127,7 @@ type GuiCallbacks struct {
 	OnOpenWebDashboard   func()
 	OnOpenTemplateFolder func()
 	OnAddTemplate        func(filePath string) (string, error)
+	OnOpenPreview        func()
 }
 
 type NativeControlPanel struct {
@@ -307,18 +309,26 @@ func (g *NativeControlPanel) createControls(hInst uintptr) {
 	)
 
 	g.createControl(
-		"BUTTON", "💾 Jadikan Default Printer",
+		"BUTTON", "💾 Jadikan Default",
 		WS_CHILD|WS_VISIBLE|WS_TABSTOP|BS_PUSHBUTTON,
-		32, 175, 210, 34,
+		32, 175, 135, 34,
 		uintptr(ID_GUI_BTN_SET_PRINTER),
 		hInst,
 	)
 
 	g.createControl(
-		"BUTTON", "📄 Tes Cetak Label",
+		"BUTTON", "📄 Tes Cetak",
 		WS_CHILD|WS_VISIBLE|WS_TABSTOP|BS_PUSHBUTTON,
-		252, 175, 180, 34,
+		172, 175, 110, 34,
 		uintptr(ID_GUI_BTN_TEST_PRINT),
+		hInst,
+	)
+
+	g.createControl(
+		"BUTTON", "👁️ FastReport Preview",
+		WS_CHILD|WS_VISIBLE|WS_TABSTOP|BS_PUSHBUTTON,
+		288, 175, 189, 34,
+		uintptr(ID_GUI_BTN_PREVIEW),
 		hInst,
 	)
 
@@ -473,6 +483,10 @@ func (g *NativeControlPanel) handleCommand(cmdId uintptr) {
 		g.onSetPrinterClicked()
 	case ID_GUI_BTN_TEST_PRINT:
 		g.onTestPrintClicked()
+	case ID_GUI_BTN_PREVIEW:
+		if g.Callbacks.OnOpenPreview != nil {
+			go g.Callbacks.OnOpenPreview()
+		}
 	case ID_GUI_BTN_SAVE_PORT:
 		g.onSavePortClicked()
 	case ID_GUI_BTN_ADD_TEMPLATE:

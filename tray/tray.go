@@ -79,6 +79,7 @@ const (
 	ID_MENU_TOGGLE_CONSOLE = 2005
 	ID_MENU_ADD_TEMPLATE   = 2006
 	ID_MENU_EXIT           = 2007
+	ID_MENU_PREVIEW        = 2008
 )
 
 type NOTIFYICONDATAW struct {
@@ -182,6 +183,10 @@ func registerTrayClass() {
 				switch cmdId {
 				case ID_MENU_GUI:
 					app.ShowControlPanel()
+				case ID_MENU_PREVIEW:
+					if app.Callbacks.OnOpenPreview != nil {
+						go app.Callbacks.OnOpenPreview()
+					}
 				case ID_MENU_BROWSER:
 					app.openBrowser()
 				case ID_MENU_OPEN_TEMPLATES:
@@ -250,6 +255,20 @@ func StartTray(port int, defaultPrinter string, cb GuiCallbacks, onExit func()) 
 	go func() {
 		runtime.LockOSThread()
 		defer runtime.UnlockOSThread()
+
+		// Pastikan thread terhubung ke desktop interaktif pengguna "Default" (agar icon muncul di taskbar fisik pengguna)
+		procOpenDesktopW := modUser32.NewProc("OpenDesktopW")
+		procSetThreadDesktop := modUser32.NewProc("SetThreadDesktop")
+		defDeskName, _ := syscall.UTF16PtrFromString("Default")
+		hDesk, _, _ := procOpenDesktopW.Call(
+			uintptr(unsafe.Pointer(defDeskName)),
+			0,
+			0,
+			uintptr(0x01FF), // DESKTOP_ALL_ACCESS
+		)
+		if hDesk != 0 {
+			procSetThreadDesktop.Call(hDesk)
+		}
 
 		trayClassOnce.Do(registerTrayClass)
 
@@ -405,6 +424,10 @@ func (t *TrayApp) showContextMenu() {
 	// Delphi-style Native Control Panel
 	guiW, _ := syscall.UTF16PtrFromString("🖥️ Buka Control Panel (Windows)")
 	procAppendMenuW.Call(hMenu, uintptr(MF_STRING), uintptr(ID_MENU_GUI), uintptr(unsafe.Pointer(guiW)))
+
+	// FastReport Native Windows Preview
+	prevW, _ := syscall.UTF16PtrFromString("👁️ FastReport Print Preview (Windows)")
+	procAppendMenuW.Call(hMenu, uintptr(MF_STRING), uintptr(ID_MENU_PREVIEW), uintptr(unsafe.Pointer(prevW)))
 
 	// Web Dashboard link
 	browserW, _ := syscall.UTF16PtrFromString("🌐 Buka Web Dashboard (Browser)")
