@@ -20,6 +20,9 @@ type PrintRequest struct {
 	PrinterNameSnake  string         `json:"printer_name,omitempty"`
 	TemplateNameSnake string         `json:"template_name,omitempty"`
 	TemplateDirSnake  string         `json:"template_dir,omitempty"`
+	ModeSnake         string         `json:"mode,omitempty"` // "label" (fixed size) atau "receipt" (dynamic auto_height)
+	AutoHeightSnake   *bool          `json:"auto_height,omitempty"`
+	AutoCutSnake      *bool          `json:"auto_cut,omitempty"`
 	DataSnake         []DocumentData `json:"data,omitempty"`
 
 	// Backward compatibility: PascalCase
@@ -27,6 +30,9 @@ type PrintRequest struct {
 	TemplateName string         `json:"TemplateName,omitempty"`
 	Template     string         `json:"Template,omitempty"`
 	TemplateDir  string         `json:"TemplateDir,omitempty"`
+	Mode         string         `json:"Mode,omitempty"`
+	AutoHeight   *bool          `json:"AutoHeight,omitempty"`
+	AutoCut      *bool          `json:"AutoCut,omitempty"`
 	Data         []DocumentData `json:"Data,omitempty"`
 }
 
@@ -57,6 +63,45 @@ func (r *PrintRequest) GetTemplateDir() string {
 	return strings.TrimSpace(r.TemplateDir)
 }
 
+// GetMode returns the print mode ("label" or "receipt")
+func (r *PrintRequest) GetMode() string {
+	if s := strings.TrimSpace(r.ModeSnake); s != "" {
+		return strings.ToLower(s)
+	}
+	return strings.ToLower(strings.TrimSpace(r.Mode))
+}
+
+// GetAutoHeight returns whether auto_height is enabled, checking mode, payload, then fallback to template
+func (r *PrintRequest) GetAutoHeight(defaultVal bool) bool {
+	if r.GetMode() == "receipt" {
+		return true
+	}
+	if r.GetMode() == "label" {
+		return false
+	}
+	if r.AutoHeightSnake != nil {
+		return *r.AutoHeightSnake
+	}
+	if r.AutoHeight != nil {
+		return *r.AutoHeight
+	}
+	return defaultVal
+}
+
+// GetAutoCut returns whether auto_cut is enabled
+func (r *PrintRequest) GetAutoCut(defaultVal bool) bool {
+	if r.GetMode() == "label" {
+		return false
+	}
+	if r.AutoCutSnake != nil {
+		return *r.AutoCutSnake
+	}
+	if r.AutoCut != nil {
+		return *r.AutoCut
+	}
+	return defaultVal
+}
+
 // GetData returns the array of document data
 func (r *PrintRequest) GetData() []DocumentData {
 	if len(r.DataSnake) > 0 {
@@ -72,6 +117,11 @@ func PrintDocuments(targetPrinter string, templateName string, documents []Docum
 
 // PrintDocumentsWithDir prints documents with an optional template directory override
 func PrintDocumentsWithDir(targetPrinter string, templateName string, templateDir string, documents []DocumentData) error {
+	return PrintDocumentsWithRequest(&PrintRequest{}, targetPrinter, templateName, templateDir, documents)
+}
+
+// PrintDocumentsWithRequest prints documents with request overrides (mode, auto_height, auto_cut)
+func PrintDocumentsWithRequest(req *PrintRequest, targetPrinter string, templateName string, templateDir string, documents []DocumentData) error {
 	if len(documents) == 0 {
 		return fmt.Errorf("tidak ada data dokumen yang dicetak")
 	}
@@ -89,13 +139,10 @@ func PrintDocumentsWithDir(targetPrinter string, templateName string, templateDi
 		targetPrinter = def
 	}
 
-	// Cek apakah template menggunakan pengulangan dinamis (band / table)
-	hasLoopBand := false
-	for _, el := range tpl.Elements {
-		if el.Type == "band" || el.Type == "table" {
-			hasLoopBand = true
-			break
-		}
+	// Tentukan apakah dokumen menggunakan mode AutoHeight (seperti EndlessHeight di FastReport)
+	isAutoHeight := tpl.AutoHeight
+	if req != nil {
+		isAutoHeight = req.GetAutoHeight(tpl.AutoHeight)
 	}
 
 	upperPrinter := strings.ToUpper(targetPrinter)
@@ -105,19 +152,28 @@ func PrintDocumentsWithDir(targetPrinter string, templateName string, templateDi
 		strings.Contains(upperPrinter, "U220") ||
 		strings.Contains(upperPrinter, "T82")
 
-	// Hitung tinggi kertas yang dibutuhkan:
-	// Untuk struk kasir / dot matrix, atau jika memiliki Area Data Berulang (Band), atau AutoHeight aktif:
-	// Tinggi kertas OTOMATIS memotong pas di akhir data (tidak akan membuang kertas kosong walaupun di kanvas diset 297 mm).
-	// Untuk label stiker barcode tetap (misal 80x50 mm), tetap menggunakan ukuran pas stiker (tpl.HeightMm).
+	// Fallback untuk struk kasir roll jika template belum memiliki tag auto_height eksplisit
+	if !isAutoHeight && (req == nil || req.GetMode() != "label") {
+		if tpl.HeightMm <= 0 || (isReceiptOrDotMatrix && tpl.HeightMm >= 200) {
+			isAutoHeight = true
+		}
+	}
+
+	// Hitung tinggi kertas yang dibutuhkan (paperHeightMm):
+	// 1. Mode Label Stiker (isAutoHeight == false): DIKUNCI MATI pada tpl.HeightMm (misal 30 mm).
+	//    Sama persis seperti FastReport EndlessHeight = False. Tidak ada auto-expand, tidak ada margin liar.
+	// 2. Mode Struk Roll (isAutoHeight == true): Dihitung dinamis mengikuti isi baris data belanjaan.
 	paperHeightMm := tpl.HeightMm
-	for _, doc := range documents {
-		neededH := CalculateDocumentHeightMm(tpl, doc)
-		if hasLoopBand || tpl.AutoHeight || isReceiptOrDotMatrix || tpl.HeightMm <= 0 {
-			if neededH > 0 {
-				paperHeightMm = neededH
+	if isAutoHeight {
+		dynMax := 0.0
+		for _, doc := range documents {
+			neededH := CalculateDocumentHeightMm(tpl, doc)
+			if neededH > dynMax {
+				dynMax = neededH
 			}
-		} else if neededH > paperHeightMm {
-			paperHeightMm = neededH
+		}
+		if dynMax > 0 {
+			paperHeightMm = dynMax
 		}
 	}
 
@@ -139,10 +195,12 @@ func PrintDocumentsWithDir(targetPrinter string, templateName string, templateDi
 	}
 
 	// Eksekusi potong kertas (Auto-Cut) setelah dokumen SELESAI seluruhnya:
-	// 1. Template eksplisit menyetel auto_cut: true, ATAU
-	// 2. Dokumen memiliki Area Data Berulang (band / table), ATAU
-	// 3. Printer adalah printer struk roll (TM-U220, TM-T82, dll)
-	if tpl.AutoCut || hasLoopBand || isReceiptOrDotMatrix || gdi.DpiY <= 180 {
+	// Mengikuti FastReport: HANYA jika auto_cut aktif dan BUKAN label stiker
+	isAutoCut := tpl.AutoCut
+	if req != nil {
+		isAutoCut = req.GetAutoCut(tpl.AutoCut)
+	}
+	if isAutoCut && (isAutoHeight || isReceiptOrDotMatrix) {
 		time.Sleep(150 * time.Millisecond)
 		_ = winapi.CutPaper(targetPrinter)
 	}

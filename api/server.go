@@ -492,7 +492,7 @@ func SetupServer(port int, enableTray bool, buildMode string) {
 		tmplDir := req.GetTemplateDir()
 		log.Printf("Menerima request cetak %d dokumen (template: '%s', dir: '%s') ke: %s\n", len(docs), tplName, tmplDir, targetPrinter)
 
-		err = engine.PrintDocumentsWithDir(targetPrinter, tplName, tmplDir, docs)
+		err = engine.PrintDocumentsWithRequest(&req, targetPrinter, tplName, tmplDir, docs)
 		if err != nil {
 			log.Printf("Gagal mencetak: %v\n", err)
 			sendError(w, http.StatusInternalServerError, err.Error())

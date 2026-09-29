@@ -2,6 +2,8 @@
   "name": "Cetak Struk Kasir",
   "width_mm": 76,
   "height_mm": 297,
+  "auto_height": true,
+  "auto_cut": true,
   "elements": [
     {
       "id": "el_datanpwp",

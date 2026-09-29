@@ -26,15 +26,10 @@ func RenderPreviewBitmap(tpl *DocumentTemplate, doc DocumentData, dpi int32) (*R
 	}
 
 	heightMm := tpl.HeightMm
-	hasLoopBand := false
-	for _, el := range tpl.Elements {
-		if el.Type == "band" || el.Type == "table" {
-			hasLoopBand = true
-			break
+	if tpl.AutoHeight || heightMm <= 0 {
+		if dynH := CalculateDocumentHeightMm(tpl, doc); dynH > 0 {
+			heightMm = dynH
 		}
-	}
-	if dynH := CalculateDocumentHeightMm(tpl, doc); dynH > 0 && (hasLoopBand || tpl.AutoHeight || dynH > heightMm) {
-		heightMm = dynH
 	}
 
 	wPx := int32(tpl.WidthMm * float64(dpi) / 25.4)
